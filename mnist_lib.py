@@ -74,15 +74,15 @@ class Autoencoder(nn.Module):
             nn.ReLU(True),
             nn.Linear(128, 64),
             nn.ReLU(True),
-            nn.Linear(64, 12),
-            nn.ReLU(True),
-            nn.Linear(12, 3)  # 潜在空间维度为3
+            nn.Linear(64, 12),# 潜在空间维度为12
+            # nn.ReLU(True),
+            # nn.Linear(12, 3)  # 潜在空间维度为3
         )
         # 解码器部分
         self.decoder = nn.Sequential(
-            nn.Linear(3, 12),
-            nn.ReLU(True),
-            nn.Linear(12, 64),
+            # nn.Linear(3, 12),
+            # nn.ReLU(True),
+            nn.Linear(12, 64),# 潜在空间维度为12
             nn.ReLU(True),
             nn.Linear(64, 128),
             nn.ReLU(True),
