@@ -49,9 +49,11 @@ def read_images(filename):
 
 
 # 显示图像的函数
+def print_image(image, filename):
+    plt.imshow(np.array(image), cmap='gray')
+    plt.savefig(filename)
 
-
-def show_images(images):
+def print_images(images):
     for i, image in enumerate(images):
         image_matrix = np.array(image).reshape((28, 28))
         plt.imshow(image_matrix, cmap='gray')
@@ -115,42 +117,90 @@ train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 
 print(f"Using device: {device}")
 
-lambda_l2 = 0.01  # L2正则化系数
-# 训练模型
-num_epochs = 10
-for epoch in range(num_epochs):
-    for data in train_loader:
-        # tensor = torch.tensor(data, dtype=torch.float32) / 255.0  # 归一化像素值到[0, 1]范围
 
-        imgs = data  # 我们不需要标签
-        imgs = imgs.view(imgs.size(0), -1)  # 展平图片
-        imgs = imgs.to(device)  # 将数据移动到设备上
+
+
+from safetensors.torch import save_file, load_file
+
+# 加载 .safetensors 文件中的模型参数
+loaded_state_dict = load_file("./models/mnist_ae.safetensors")
+model.load_state_dict(loaded_state_dict)
+
+# 设置模型为评估模式
+model.eval()
+
+# 测试集路径
+test_images_path = 'mnist/train-images.idx3-ubyte'
+# test_labels_path = 'mnist/t10k-labels.idx1-ubyte'
+
+# 加载测试数据集
+test_dataset = MNISTDataset(test_images_path, transform=transform)
+test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+
+# 测试模型性能
+with torch.no_grad():
+    correct = 0
+    total = 0
+    # for images in test_loader:
+    #     images = images.to(device)
+    #     # labels = labels.to(device)
+    #     outputs = model(images)
+    #     out_images = outputs.detach().cpu().numpy()
+    #     # show image
+    #     for i in range(64):
+
+    first_batch = next(iter(test_loader))
+    inputs = first_batch
+    inputs = inputs.to(device)
+    outputs = model(inputs)
+    # convert outputs into images and print_images them
+    out_images = outputs.detach().cpu()
+    input_images = inputs.detach().cpu()
+    print('Input image shape:', input_images.shape)
+    # get shape
+    print('Output image shape:', out_images.shape)
+
+    for i in range(64):
+        out_ = out_images[i] * 255.0  # scale to [0, 255]
+        input_image = input_images[i] * 255.0  # scale to [0, 255]
+
+
+        input_image = input_image.numpy().reshape((28, 28))    # convert to numpy array
+        out_ = out_.numpy().reshape((28, 28))     # convert to numpy array
+
+        # concatenate images horizontally
+        image_ = np.hstack((input_image, out_))  # concatenate horizontally
+
+
+
+        # save images
+        print('Saving concatenated image for input {}...'.format(i))
+
+        print_image(image_, './mnist_output/concatenated_image_verify_{}.png'.format(i))  # save image
+
+
+
+
+
+
 
         
-        # 前向传播
-        output = model(imgs)
-        loss = criterion(output, imgs)  # 自动编码器尝试最小化输入和输出之间的差异
+        # # image = image.view(28, 28)  # reshape to (28, 28)
+        # print('Output image {}:'.format(i), out_.shape)
 
-        # implement L2 regularization
-        l2_reg = torch.tensor(0.).to(device)  # 初始化L2正则化项为0
-        for param in model.parameters():
-            l2_reg += torch.norm(param, p=2)
-
-        # l2_reg = lambda_l2 * l2_reg
-        # l2_reg.to(device)  # 将L2正则化项移动到设备上
-
-        # loss += l2_reg * lambda_l2
+        # print_image(out_, './mnist_output/out_image_{}.png'.format(i))
+        # print_image(input_image, './mnist_output/input_image_{}.png'.format(i))
 
 
-        
-        # 反向传播和优化
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
 
-    print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
 
-print("训练完成")
 
-from safetensors.torch import save_file
-save_file(model.state_dict(), "./models/mnist_ae.safetensors")
+
+
+
+
+
+
+
+
+
